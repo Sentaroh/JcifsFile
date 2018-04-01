@@ -3,14 +3,15 @@ package com.sentaroh.jcifs;
 import java.util.Properties;
 
 public class JcifsAuth {
-	private jcifs.smb.NtlmPasswordAuthentication mOldAuth=null;
+	
+	private jcifs.smb.NtlmPasswordAuthentication mSmb1Auth=null;
 	private jcifsng.CIFSContext mNgAuth=null;
-	private String mLevel= JcifsFile.JCIFS_LEVEL_JCIFS1;
+	private String mLevel = JcifsFile.JCIFS_LEVEL_JCIFS1;
 
 	public JcifsAuth(String level, String domain, String user, String pass) {
         mLevel=level;
 		if (level.equals(JcifsFile.JCIFS_LEVEL_JCIFS1)) {
-			mOldAuth=new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
+			mSmb1Auth=new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
 		} else {
 	        jcifsng.context.BaseContext bc;
 			try {
@@ -29,7 +30,7 @@ public class JcifsAuth {
     public JcifsAuth(String level, String domain, String user, String pass, boolean ipc_signing_enforced) {
         mLevel=level;
         if (level.equals(JcifsFile.JCIFS_LEVEL_JCIFS1)) {
-            mOldAuth=new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
+            mSmb1Auth=new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
         } else {
             jcifsng.context.BaseContext bc;
             try {
@@ -49,7 +50,7 @@ public class JcifsAuth {
     public JcifsAuth(String level, String domain, String user, String pass, boolean ipc_signing_enforced, String min_version, String max_version) {
         mLevel=level;
         if (level.equals(JcifsFile.JCIFS_LEVEL_JCIFS1)) {
-            mOldAuth=new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
+            mSmb1Auth=new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
         } else {
             jcifsng.context.BaseContext bc;
             try {
@@ -68,11 +69,15 @@ public class JcifsAuth {
         }
     }
 
-    public jcifs.smb.NtlmPasswordAuthentication getOldAuth() {
-		return mOldAuth;
+    public boolean isSmb1Auth() {
+    	return mLevel.equals(JcifsFile.JCIFS_LEVEL_JCIFS1)?true:false;
+    }
+    
+    public jcifs.smb.NtlmPasswordAuthentication getSmb1Auth() {
+		return mSmb1Auth;
 	}
 	
-	public jcifsng.CIFSContext getNgAuth() {
+	public jcifsng.CIFSContext getSmb2Auth() {
 		return mNgAuth;
 	}
 

@@ -1,10 +1,11 @@
 package com.sentaroh.jcifs;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+
+import jcifs.smb.SmbException;
 
 
 public class JcifsFile {
@@ -17,8 +18,8 @@ public class JcifsFile {
 
     private JcifsAuth mAuth=null;
 
-    private jcifsng.smb.SmbFile mNgSmbFile=null;
-    private jcifs.smb.SmbFile mOldSmbFile=null;
+    private jcifsng.smb.SmbFile mNewGenerationSmbFile=null;
+    private jcifs.smb.SmbFile mTraditionalSmbFile=null;
 
     public JcifsFile(String url, JcifsAuth auth) throws MalformedURLException {
         mLevel=auth.getCifsLevel();
@@ -26,19 +27,23 @@ public class JcifsFile {
         mAuth=auth;
         
     	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-    		mOldSmbFile=new jcifs.smb.SmbFile(url, auth.getOldAuth());
+    		mTraditionalSmbFile=new jcifs.smb.SmbFile(mUrl, auth.getSmb1Auth());
     	} else {
-    		mNgSmbFile=new jcifsng.smb.SmbFile(url,auth.getNgAuth());
+    		mNewGenerationSmbFile=new jcifsng.smb.SmbFile(mUrl,auth.getSmb2Auth());
     	}
         
     }
 
+    public boolean isSmb1File() {
+    	return mLevel.equals(JCIFS_LEVEL_JCIFS1)?true:false;
+    }
+    
     public boolean exists()   throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.exists();
+        		return mTraditionalSmbFile.exists();
         	} else {
-        		return mNgSmbFile.exists();
+        		return mNewGenerationSmbFile.exists();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -53,9 +58,9 @@ public class JcifsFile {
     public void delete()   throws JcifsException{
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		mOldSmbFile.delete();
+        		mTraditionalSmbFile.delete();
         	} else {
-        		mNgSmbFile.delete();
+        		mNewGenerationSmbFile.delete();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -70,9 +75,9 @@ public class JcifsFile {
     public void mkdir()   throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		mOldSmbFile.mkdir();
+        		mTraditionalSmbFile.mkdir();
         	} else {
-        		mNgSmbFile.mkdir();
+        		mNewGenerationSmbFile.mkdir();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -87,9 +92,9 @@ public class JcifsFile {
     public void mkdirs()   throws JcifsException{
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		mOldSmbFile.mkdirs();
+        		mTraditionalSmbFile.mkdirs();
         	} else {
-        		mNgSmbFile.mkdirs();
+        		mNewGenerationSmbFile.mkdirs();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -101,12 +106,12 @@ public class JcifsFile {
     	
     }
 
-    public InputStream getInputStream()   throws JcifsException, IOException {
+    public int getAttributes() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.getInputStream();
+        		return mTraditionalSmbFile.getAttributes();
         	} else {
-        		return mNgSmbFile.getInputStream();
+        		return mNewGenerationSmbFile.getAttributes();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -115,16 +120,14 @@ public class JcifsFile {
 			e.printStackTrace();
 			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
 		}
-    	
     }
-
-
-    public OutputStream getOutputStream()  throws JcifsException, IOException {
+    
+    public InputStream getInputStream()   throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.getOutputStream();
+        		return mTraditionalSmbFile.getInputStream();
         	} else {
-        		return mNgSmbFile.getOutputStream();
+        		return mNewGenerationSmbFile.getInputStream();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -132,16 +135,40 @@ public class JcifsFile {
 		} catch (jcifs.smb.SmbException e) {
 			e.printStackTrace();
 			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw(new JcifsException(e, 0, e.getCause()));
+		}
+    	
+    }
+
+
+    public OutputStream getOutputStream()  throws JcifsException{
+        try {
+        	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
+        		return mTraditionalSmbFile.getOutputStream();
+        	} else {
+        		return mNewGenerationSmbFile.getOutputStream();
+        	}
+		} catch (jcifsng.smb.SmbException e) {
+			e.printStackTrace();
+			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
+		} catch (jcifs.smb.SmbException e) {
+			e.printStackTrace();
+			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw(new JcifsException(e, 0, e.getCause()));
 		}
     	
     }
     
-    public void connect() throws JcifsException, IOException {
+    public void connect() throws JcifsException{
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		mOldSmbFile.connect();
+        		mTraditionalSmbFile.connect();
         	} else {
-        		mNgSmbFile.connect();
+        		mNewGenerationSmbFile.connect();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -149,6 +176,9 @@ public class JcifsFile {
 		} catch (jcifs.smb.SmbException e) {
 			e.printStackTrace();
 			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw(new JcifsException(e, 0, e.getCause()));
 		}
 
     }
@@ -156,9 +186,9 @@ public class JcifsFile {
     public void createNew() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		mOldSmbFile.createNewFile();
+        		mTraditionalSmbFile.createNewFile();
         	} else {
-        		mNgSmbFile.createNewFile();
+        		mNewGenerationSmbFile.createNewFile();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -172,26 +202,66 @@ public class JcifsFile {
     
     public String getName() {
         if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-			return mOldSmbFile.getName();
+			return mTraditionalSmbFile.getName();
 		} else {
-			return mNgSmbFile.getName();
+			return mNewGenerationSmbFile.getName();
 		}
     	
     }
 
     public String getPath() {
         if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-			return mOldSmbFile.getPath();
+			return mTraditionalSmbFile.getPath();
 		} else {
-			return mNgSmbFile.getPath();
+			return mNewGenerationSmbFile.getPath();
+		}
+    }
+
+    public String getCanonicalPath() {
+        if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
+			return mTraditionalSmbFile.getCanonicalPath();
+		} else {
+			return mNewGenerationSmbFile.getCanonicalPath();
+		}
+    }
+
+    public String getShare() {
+        if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
+			return mTraditionalSmbFile.getShare();
+		} else {
+			return mNewGenerationSmbFile.getShare();
+		}
+    }
+
+    public int getType() throws JcifsException {
+        try {
+            if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
+    			return mTraditionalSmbFile.getType();
+    		} else {
+    			return mNewGenerationSmbFile.getType();
+    		}
+        } catch (jcifsng.smb.SmbException e) {
+            e.printStackTrace();
+            throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifs.smb.SmbException e) {
+            e.printStackTrace();
+            throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
+        }
+    }
+
+    public String getUncPath() {
+        if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
+			return mTraditionalSmbFile.getUncPath();
+		} else {
+			return mNewGenerationSmbFile.getUncPath();
 		}
     }
 
     public String getParent() {
         if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-			return mOldSmbFile.getParent();
+			return mTraditionalSmbFile.getParent();
 		} else {
-			return mNgSmbFile.getParent();
+			return mNewGenerationSmbFile.getParent();
 		}
     	
     }
@@ -199,9 +269,9 @@ public class JcifsFile {
     public boolean canRead()   throws JcifsException {
         try {
             if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-                return mOldSmbFile.canRead();
+                return mTraditionalSmbFile.canRead();
             } else {
-                return mNgSmbFile.canRead();
+                return mNewGenerationSmbFile.canRead();
             }
         } catch (jcifsng.smb.SmbException e) {
             e.printStackTrace();
@@ -215,9 +285,9 @@ public class JcifsFile {
     public boolean canWrite()   throws JcifsException {
         try {
             if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-                return mOldSmbFile.canWrite();
+                return mTraditionalSmbFile.canWrite();
             } else {
-                return mNgSmbFile.canWrite();
+                return mNewGenerationSmbFile.canWrite();
             }
         } catch (jcifsng.smb.SmbException e) {
             e.printStackTrace();
@@ -231,9 +301,9 @@ public class JcifsFile {
     public boolean isDirectory() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.isDirectory();
+        		return mTraditionalSmbFile.isDirectory();
         	} else {
-        		return mNgSmbFile.isDirectory();
+        		return mNewGenerationSmbFile.isDirectory();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -248,9 +318,9 @@ public class JcifsFile {
     public boolean isFile() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.isFile();
+        		return mTraditionalSmbFile.isFile();
         	} else {
-        		return mNgSmbFile.isFile();
+        		return mNewGenerationSmbFile.isFile();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -265,9 +335,9 @@ public class JcifsFile {
     public boolean isHidden() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.isHidden();
+        		return mTraditionalSmbFile.isHidden();
         	} else {
-        		return mNgSmbFile.isHidden();
+        		return mNewGenerationSmbFile.isHidden();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -281,9 +351,9 @@ public class JcifsFile {
     public long length() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		return mOldSmbFile.length();
+        		return mTraditionalSmbFile.length();
         	} else {
-        		return mNgSmbFile.length();
+        		return mNewGenerationSmbFile.length();
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -297,8 +367,8 @@ public class JcifsFile {
     
     public String[] list() throws JcifsException {
         try {
-        	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) return mOldSmbFile.list();
-        	else return mNgSmbFile.list();
+        	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) return mTraditionalSmbFile.list();
+        	else return mNewGenerationSmbFile.list();
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
 			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -312,13 +382,13 @@ public class JcifsFile {
     public JcifsFile[] listFiles() throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		jcifs.smb.SmbFile[] files=mOldSmbFile.listFiles();
+        		jcifs.smb.SmbFile[] files=mTraditionalSmbFile.listFiles();
         		if (files==null) return null;
         		JcifsFile[] result=new JcifsFile[files.length];
         		for(int i=0;i<files.length;i++) result[i]=new JcifsFile(files[i].getPath(),mAuth);
         		return result;
         	} else {
-                jcifsng.smb.SmbFile[] files=mNgSmbFile.listFiles();
+                jcifsng.smb.SmbFile[] files=mNewGenerationSmbFile.listFiles();
         		if (files==null) return null;
         		JcifsFile[] result=new JcifsFile[files.length];
         		for(int i=0;i<files.length;i++) result[i]=new JcifsFile(files[i].getPath(),mAuth);
@@ -338,11 +408,11 @@ public class JcifsFile {
     public void renameTo ( JcifsFile d ) throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        		jcifs.smb.SmbFile to=new jcifs.smb.SmbFile(d.getPath(), d.getAuth().getOldAuth());
-        		mOldSmbFile.renameTo(to);
+        		jcifs.smb.SmbFile to=new jcifs.smb.SmbFile(d.getPath(), d.getAuth().getSmb1Auth());
+        		mTraditionalSmbFile.renameTo(to);
         	} else {
-                jcifsng.smb.SmbFile to=new jcifsng.smb.SmbFile(d.getPath(), d.getAuth().getNgAuth());
-        		mNgSmbFile.renameTo(to);
+                jcifsng.smb.SmbFile to=new jcifsng.smb.SmbFile(d.getPath(), d.getAuth().getSmb2Auth());
+        		mNewGenerationSmbFile.renameTo(to);
         	}
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -359,14 +429,13 @@ public class JcifsFile {
     	return mAuth;
     }
 
-
-
+    
     public void setLastModified(long lm) throws JcifsException {
         try {
         	if (mLevel.equals(JCIFS_LEVEL_JCIFS1)) {
-        	    mOldSmbFile.setLastModified(lm);
+        	    mTraditionalSmbFile.setLastModified(lm);
             } else {
-        	    mNgSmbFile.setLastModified(lm);
+        	    mNewGenerationSmbFile.setLastModified(lm);
             }
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
@@ -379,7 +448,7 @@ public class JcifsFile {
 
     public long getLastModified() throws JcifsException {
         try {
-			return mLevel.equals(JCIFS_LEVEL_JCIFS1)?mOldSmbFile.lastModified():mNgSmbFile.lastModified();
+			return mLevel.equals(JCIFS_LEVEL_JCIFS1)?mTraditionalSmbFile.lastModified():mNewGenerationSmbFile.lastModified();
 		} catch (jcifsng.smb.SmbException e) {
 			e.printStackTrace();
 			throw(new JcifsException(e, e.getNtStatus(), e.getCause()));
