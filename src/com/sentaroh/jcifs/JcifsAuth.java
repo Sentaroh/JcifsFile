@@ -26,40 +26,66 @@ OTHER DEALINGS IN THE SOFTWARE.
 import java.util.Properties;
 
 public class JcifsAuth {
-    final static public boolean JCIFS_FILE_SMB1 = true;
-    final static public boolean JCIFS_FILE_SMB2 = false;
+    final static public int JCIFS_FILE_SMB1 = 1;
+    final static public int JCIFS_FILE_SMB201 = 2;
+    final static public int JCIFS_FILE_SMB211 = 3;
+    final static public int JCIFS_FILE_SMB212 = 4;
     private jcifs.smb.NtlmPasswordAuthentication mSmb1Auth = null;
-    private jcifsng.CIFSContext mSmb2Auth = null;
-    private boolean mSmb1 = true;
+    private jcifsng.CIFSContext mSmb201Auth = null;
+    private jcifsng211.CIFSContext mSmb211Auth = null;
+    private jcifsng212.CIFSContext mSmb212Auth = null;
+    private int mSmbLevel = JCIFS_FILE_SMB1;
 
     private String mDomain = null, mUserName = null, mUserPass = null;
 
     /**
      * SMB1 or SMB2 Constructor
      *
-     * @param smb1   true is use jcifs-1.3.17, false is use jcifs-ng
+     * @param smb1   1 is use jcifs-1.3.17, 2 is use jcifs-ng 2.1.0, 3 is jcifs-ng 2.1.1, 4 is jcifs-ng 2.1.2
      * @param domain A domain name
      * @param user   A user name
      * @param pass   A password for user
      * @throws JcifsException
      */
     @SuppressWarnings("deprecation")
-    public JcifsAuth(boolean smb_level, String domain, String user, String pass) {
-        mSmb1 = smb_level;
+    public JcifsAuth(int smb_level, String domain, String user, String pass) {
+        mSmbLevel = smb_level;
         mDomain = domain;
         mUserName = user;
         mUserPass = pass;
-        if (mSmb1) {
+        if (mSmbLevel==JCIFS_FILE_SMB1) {
             mSmb1Auth = new jcifs.smb.NtlmPasswordAuthentication(domain, user, pass);
-        } else {
+        } else if (mSmbLevel==JCIFS_FILE_SMB201) {
             try {
                 Properties prop = new Properties();
                 prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
                 prop.setProperty("jcifs.smb.client.maxVersion", "SMB210");
                 jcifsng.context.BaseContext bc = new jcifsng.context.BaseContext(new jcifsng.config.PropertyConfiguration(prop));
                 jcifsng.smb.NtlmPasswordAuthentication creds = new jcifsng.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
-                mSmb2Auth = bc.withCredentials(creds);
+                mSmb201Auth = bc.withCredentials(creds);
             } catch (jcifsng.CIFSException e) {
+                e.printStackTrace();
+            }
+        } else if (mSmbLevel==JCIFS_FILE_SMB211) {
+            try {
+                Properties prop = new Properties();
+                prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
+                prop.setProperty("jcifs.smb.client.maxVersion", "SMB210");
+                jcifsng211.context.BaseContext bc = new jcifsng211.context.BaseContext(new jcifsng211.config.PropertyConfiguration(prop));
+                jcifsng211.smb.NtlmPasswordAuthentication creds = new jcifsng211.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb211Auth = bc.withCredentials(creds);
+            } catch (jcifsng211.CIFSException e) {
+                e.printStackTrace();
+            }
+        } else if (mSmbLevel==JCIFS_FILE_SMB212) {
+            try {
+                Properties prop = new Properties();
+                prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
+                prop.setProperty("jcifs.smb.client.maxVersion", "SMB300");
+                jcifsng212.context.BaseContext bc = new jcifsng212.context.BaseContext(new jcifsng212.config.PropertyConfiguration(prop));
+                jcifsng212.smb.NtlmPasswordAuthentication creds = new jcifsng212.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb212Auth = bc.withCredentials(creds);
+            } catch (jcifsng212.CIFSException e) {
                 e.printStackTrace();
             }
         }
@@ -68,37 +94,71 @@ public class JcifsAuth {
     /**
      * SMB2 Constructor
      *
-     * @param domain               A domain name
-     * @param user                 A user name
-     * @param pass                 A password for user
+     * @param smb1   		1 is use jcifs-1.3.17, 2 is use jcifs-ng 2.1.0, 3 is jcifs-ng 2.1.1, 4 is jcifs-ng 2.1.2
+     * @param domain        A domain name
+     * @param user          A user name
+     * @param pass          A password for user
      * @param ipc_signing_enforced true is use IpcSigningEnforced
      * @throws JcifsException
      */
     @SuppressWarnings("deprecation")
-    public JcifsAuth(String domain, String user, String pass, boolean ipc_signing_enforced) {
-        mSmb1 = JCIFS_FILE_SMB2;
+    public JcifsAuth(int smb_level, String domain, String user, String pass, boolean ipc_signing_enforced) {
+        mSmbLevel = smb_level;
         mDomain = domain;
         mUserName = user;
         mUserPass = pass;
-        try {
-            Properties prop = new Properties();
-            if (ipc_signing_enforced)
-                prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
-            else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
-            prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
-            prop.setProperty("jcifs.smb.client.maxVersion", "SMB210");
+        if (isSmb201()) {
+            try {
+                Properties prop = new Properties();
+                if (ipc_signing_enforced)
+                    prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
+                else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
+                prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
+                prop.setProperty("jcifs.smb.client.maxVersion", "SMB210");
 
-            jcifsng.context.BaseContext bc = new jcifsng.context.BaseContext(new jcifsng.config.PropertyConfiguration(prop));
-            jcifsng.smb.NtlmPasswordAuthentication creds = new jcifsng.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
-            mSmb2Auth = bc.withCredentials(creds);
-        } catch (jcifsng.CIFSException e) {
-            e.printStackTrace();
+                jcifsng.context.BaseContext bc = new jcifsng.context.BaseContext(new jcifsng.config.PropertyConfiguration(prop));
+                jcifsng.smb.NtlmPasswordAuthentication creds = new jcifsng.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb201Auth = bc.withCredentials(creds);
+            } catch (jcifsng.CIFSException e) {
+                e.printStackTrace();
+            }
+        } if (isSmb211()) {
+            try {
+                Properties prop = new Properties();
+                if (ipc_signing_enforced)
+                    prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
+                else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
+                prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
+                prop.setProperty("jcifs.smb.client.maxVersion", "SMB210");
+
+                jcifsng211.context.BaseContext bc = new jcifsng211.context.BaseContext(new jcifsng211.config.PropertyConfiguration(prop));
+                jcifsng211.smb.NtlmPasswordAuthentication creds = new jcifsng211.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb211Auth = bc.withCredentials(creds);
+            } catch (jcifsng211.CIFSException e) {
+                e.printStackTrace();
+            }
+        } if (isSmb212()) {
+            try {
+                Properties prop = new Properties();
+                if (ipc_signing_enforced)
+                    prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
+                else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
+                prop.setProperty("jcifs.smb.client.minVersion", "SMB210");
+                prop.setProperty("jcifs.smb.client.maxVersion", "SMB300");
+
+                jcifsng212.context.BaseContext bc = new jcifsng212.context.BaseContext(new jcifsng212.config.PropertyConfiguration(prop));
+                jcifsng212.smb.NtlmPasswordAuthentication creds = new jcifsng212.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb212Auth = bc.withCredentials(creds);
+            } catch (jcifsng212.CIFSException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     /**
      * SMB2 Constructor
      *
+     * @param smb1   1 is use jcifs-1.3.17, 2 is use jcifs-ng 2.1.0, 3 is jcifs-ng 2.1.1, 4 is jcifs-ng 2.1.2
      * @param domain               A domain name
      * @param user                 A user name
      * @param pass                 A password for user
@@ -108,37 +168,93 @@ public class JcifsAuth {
      * @throws JcifsException
      */
     @SuppressWarnings("deprecation")
-    public JcifsAuth(String domain, String user, String pass, boolean ipc_signing_enforced, String min_version, String max_version) {
-        mSmb1 = JCIFS_FILE_SMB2;
+    public JcifsAuth(int smb_level, String domain, String user, String pass, boolean ipc_signing_enforced, String min_version, String max_version) {
+        mSmbLevel = smb_level;
         mDomain = domain;
         mUserName = user;
         mUserPass = pass;
-        try {
-            Properties prop = new Properties();
-            if (ipc_signing_enforced)
-                prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
-            else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
-            prop.setProperty("jcifs.smb.client.minVersion", min_version);
-            prop.setProperty("jcifs.smb.client.maxVersion", max_version);
+        if (isSmb201()) {
+            try {
+                Properties prop = new Properties();
+                if (ipc_signing_enforced)
+                    prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
+                else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
+                prop.setProperty("jcifs.smb.client.minVersion", min_version);
+                prop.setProperty("jcifs.smb.client.maxVersion", max_version);
 
-            jcifsng.context.BaseContext bc = new jcifsng.context.BaseContext(new jcifsng.config.PropertyConfiguration(prop));
-            jcifsng.smb.NtlmPasswordAuthentication creds = new jcifsng.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
-            mSmb2Auth = bc.withCredentials(creds);
-        } catch (jcifsng.CIFSException e) {
-            e.printStackTrace();
+                jcifsng.context.BaseContext bc = new jcifsng.context.BaseContext(new jcifsng.config.PropertyConfiguration(prop));
+                jcifsng.smb.NtlmPasswordAuthentication creds = new jcifsng.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb201Auth = bc.withCredentials(creds);
+            } catch (jcifsng.CIFSException e) {
+                e.printStackTrace();
+            }
+        } else if (isSmb211()) {
+            try {
+                Properties prop = new Properties();
+                if (ipc_signing_enforced)
+                    prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
+                else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
+                prop.setProperty("jcifs.smb.client.minVersion", min_version);
+                prop.setProperty("jcifs.smb.client.maxVersion", max_version);
+
+                jcifsng211.context.BaseContext bc = new jcifsng211.context.BaseContext(new jcifsng211.config.PropertyConfiguration(prop));
+                jcifsng211.smb.NtlmPasswordAuthentication creds = new jcifsng211.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb211Auth = bc.withCredentials(creds);
+            } catch (jcifsng211.CIFSException e) {
+                e.printStackTrace();
+            }
+        } else if (isSmb212()) {
+            try {
+                Properties prop = new Properties();
+                if (ipc_signing_enforced)
+                    prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "true");
+                else prop.setProperty("jcifs.smb.client.ipcSigningEnforced", "false");
+                prop.setProperty("jcifs.smb.client.minVersion", min_version);
+                prop.setProperty("jcifs.smb.client.maxVersion", max_version);
+
+                jcifsng212.context.BaseContext bc = new jcifsng212.context.BaseContext(new jcifsng212.config.PropertyConfiguration(prop));
+                jcifsng212.smb.NtlmPasswordAuthentication creds = new jcifsng212.smb.NtlmPasswordAuthentication(bc, domain, user, pass);
+                mSmb212Auth = bc.withCredentials(creds);
+            } catch (jcifsng212.CIFSException e) {
+                e.printStackTrace();
+            }
         }
     }
 
+    public int getSmbLevel() {
+        return mSmbLevel;
+    }
+
     public boolean isSmb1() {
-        return mSmb1;
+        return mSmbLevel==JCIFS_FILE_SMB1;
+    }
+
+    public boolean isSmb201() {
+        return mSmbLevel==JCIFS_FILE_SMB201;
+    }
+
+    public boolean isSmb211() {
+        return mSmbLevel==JCIFS_FILE_SMB211;
+    }
+
+    public boolean isSmb212() {
+        return mSmbLevel==JCIFS_FILE_SMB212;
     }
 
     public jcifs.smb.NtlmPasswordAuthentication getSmb1Auth() {
         return mSmb1Auth;
     }
 
-    public jcifsng.CIFSContext getSmb2Auth() {
-        return mSmb2Auth;
+    public jcifsng.CIFSContext getSmb201Auth() {
+        return mSmb201Auth;
+    }
+
+    public jcifsng211.CIFSContext getSmb211Auth() {
+        return mSmb211Auth;
+    }
+
+    public jcifsng212.CIFSContext getSmb212Auth() {
+        return mSmb212Auth;
     }
 
     public String getDomain() {
