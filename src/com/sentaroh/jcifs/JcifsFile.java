@@ -31,29 +31,32 @@ import java.net.MalformedURLException;
 
 public class JcifsFile {
 
-    private boolean mSmb1 = true;
+    private int mSmbLevel = JcifsAuth.JCIFS_FILE_SMB1;
 
     private JcifsAuth mAuth = null;
 
-    private jcifsng.smb.SmbFile mSmb2File = null;
+    private jcifsng.smb.SmbFile mSmb201File = null;
+    private jcifsng211.smb.SmbFile mSmb211File = null;
     private jcifs.smb.SmbFile mSmb1File = null;
 
     public JcifsFile(String url, JcifsAuth auth) throws MalformedURLException, JcifsException {
         if (auth==null) {
             throw new JcifsException("JcifsAuth is null.");
         }
-        mSmb1 = auth.isSmb1();
+        mSmbLevel = auth.getSmbLevel();
         mAuth = auth;
 
-        if (mSmb1) {
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
             mSmb1File = new jcifs.smb.SmbFile(url, auth.getSmb1Auth());
-        } else {
-            mSmb2File = new jcifsng.smb.SmbFile(url, auth.getSmb2Auth());
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            mSmb201File = new jcifsng.smb.SmbFile(url, auth.getSmb201Auth());
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            mSmb211File = new jcifsng211.smb.SmbFile(url, auth.getSmb211Auth());
         }
     }
 
     private JcifsFile(jcifs.smb.SmbFile smb1File, JcifsAuth auth) throws JcifsException {
-        mSmb1 = JcifsAuth.JCIFS_FILE_SMB1;
+        mSmbLevel = JcifsAuth.JCIFS_FILE_SMB1;
         if (auth==null || !auth.isSmb1()) {
             throw new JcifsException("JcifsAuth is null or SMB2.");
         }
@@ -62,34 +65,60 @@ public class JcifsFile {
     }
 
     private JcifsFile(jcifsng.smb.SmbFile smb2File, JcifsAuth auth) throws JcifsException {
-        mSmb1 = JcifsAuth.JCIFS_FILE_SMB2;
+        mSmbLevel = JcifsAuth.JCIFS_FILE_SMB201;
         if (auth==null || auth.isSmb1()) {
             throw new JcifsException("JcifsAuth is null or SMB1.");
         }
         mAuth = auth;
-        mSmb2File = smb2File;
+        mSmb201File = smb2File;
+    }
+
+    private JcifsFile(jcifsng211.smb.SmbFile smb211File, JcifsAuth auth) throws JcifsException {
+        mSmbLevel = JcifsAuth.JCIFS_FILE_SMB211;
+        if (auth==null || auth.isSmb1()) {
+            throw new JcifsException("JcifsAuth is null or SMB1.");
+        }
+        mAuth = auth;
+        mSmb211File = smb211File;
     }
 
     public boolean isSmb1File() {
-        return mSmb1;
+        return mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1;
+    }
+
+    public boolean isSmb201File() {
+        return mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201;
+    }
+
+    public boolean isSmb211File() {
+        return mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211;
     }
 
     public jcifs.smb.SmbFile getSmb1File() {
         return mSmb1File;
     }
 
-    public jcifsng.smb.SmbFile getSmb2File() {
-        return mSmb2File;
+    public jcifsng.smb.SmbFile getSmb201File() {
+        return mSmb201File;
+    }
+
+    public jcifsng211.smb.SmbFile getSmb211File() {
+        return mSmb211File;
     }
 
     public boolean exists() throws JcifsException {
         try {
-            if (mSmb1) {
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
                 return mSmb1File.exists();
-            } else {
-                return mSmb2File.exists();
-            }
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+                return mSmb201File.exists();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+                return mSmb211File.exists();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -99,12 +128,17 @@ public class JcifsFile {
 
     public void delete() throws JcifsException {
         try {
-            if (mSmb1) {
-                mSmb1File.delete();
-            } else {
-                mSmb2File.delete();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	mSmb1File.delete();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	mSmb201File.delete();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	mSmb211File.delete();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -114,42 +148,55 @@ public class JcifsFile {
 
     public void mkdir() throws JcifsException {
         try {
-            if (mSmb1) {
-                mSmb1File.mkdir();
-            } else {
-                mSmb2File.mkdir();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	mSmb1File.mkdir();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	mSmb201File.mkdir();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	mSmb211File.mkdir();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public void mkdirs() throws JcifsException {
         try {
-            if (mSmb1) {
-                mSmb1File.mkdirs();
-            } else {
-                mSmb2File.mkdirs();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	mSmb1File.mkdirs();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	mSmb201File.mkdirs();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	mSmb211File.mkdirs();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public int getAttributes() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.getAttributes();
-            } else {
-                return mSmb2File.getAttributes();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.getAttributes();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.getAttributes();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.getAttributes();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -158,112 +205,144 @@ public class JcifsFile {
 
     public InputStream getInputStream() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.getInputStream();
-            } else {
-                return mSmb2File.getInputStream();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.getInputStream();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.getInputStream();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.getInputStream();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (IOException e) {
             throw (new JcifsException(e, 0, e.getCause()));
         }
-
     }
 
 
     public OutputStream getOutputStream() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.getOutputStream();
-            } else {
-                return mSmb2File.getOutputStream();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.getOutputStream();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.getOutputStream();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.getOutputStream();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (IOException e) {
             throw (new JcifsException(e, 0, e.getCause()));
         }
-
     }
 
     public void connect() throws JcifsException {
         try {
-            if (mSmb1) {
-                mSmb1File.connect();
-            } else {
-                mSmb2File.connect();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	mSmb1File.connect();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	mSmb201File.connect();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	mSmb211File.connect();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (IOException e) {
             throw (new JcifsException(e, 0, e.getCause()));
         }
-
     }
 
     public void createNew() throws JcifsException {
         try {
-            if (mSmb1) {
-                mSmb1File.createNewFile();
-            } else {
-                mSmb2File.createNewFile();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	mSmb1File.createNewFile();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	mSmb201File.createNewFile();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	mSmb211File.createNewFile();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public String getName() {
-        if (mSmb1) {
-            return mSmb1File.getName();
-        } else {
-            return mSmb2File.getName();
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	return mSmb1File.getName();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	return mSmb201File.getName();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	return mSmb211File.getName();
         }
-
+        return null;
     }
 
     public String getPath() {
-        if (mSmb1) {
-            return mSmb1File.getPath();
-        } else {
-            return mSmb2File.getPath();
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	return mSmb1File.getPath();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	return mSmb201File.getPath();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	return mSmb211File.getPath();
         }
+        return null;
     }
 
     public String getCanonicalPath() {
-        if (mSmb1) {
-            return mSmb1File.getCanonicalPath();
-        } else {
-            return mSmb2File.getCanonicalPath();
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	return mSmb1File.getCanonicalPath();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	return mSmb201File.getCanonicalPath();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	return mSmb211File.getCanonicalPath();
         }
+        return null;
     }
 
     public String getShare() {
-        if (mSmb1) {
-            return mSmb1File.getShare();
-        } else {
-            return mSmb2File.getShare();
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	return mSmb1File.getShare();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	return mSmb201File.getShare();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	return mSmb211File.getShare();
         }
+        return null;
     }
 
     public int getType() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.getType();
-            } else {
-                return mSmb2File.getType();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.getType();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.getType();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.getType();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -271,30 +350,40 @@ public class JcifsFile {
     }
 
     public String getUncPath() {
-        if (mSmb1) {
-            return mSmb1File.getUncPath();
-        } else {
-            return mSmb2File.getUncPath();
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	return mSmb1File.getUncPath();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	return mSmb201File.getUncPath();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	return mSmb211File.getUncPath();
         }
+        return null;
     }
 
     public String getParent() {
-        if (mSmb1) {
-            return mSmb1File.getParent();
-        } else {
-            return mSmb2File.getParent();
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	return mSmb1File.getParent();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	return mSmb201File.getParent();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	return mSmb211File.getParent();
         }
-
+        return null;
     }
 
     public boolean canRead() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.canRead();
-            } else {
-                return mSmb2File.canRead();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.canRead();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.canRead();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.canRead();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -303,12 +392,17 @@ public class JcifsFile {
 
     public boolean canWrite() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.canWrite();
-            } else {
-                return mSmb2File.canWrite();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.canWrite();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.canWrite();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.canWrite();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -317,42 +411,55 @@ public class JcifsFile {
 
     public boolean isDirectory() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.isDirectory();
-            } else {
-                return mSmb2File.isDirectory();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.isDirectory();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.isDirectory();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.isDirectory();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public boolean isFile() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.isFile();
-            } else {
-                return mSmb2File.isFile();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.isFile();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.isFile();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.isFile();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public boolean isHidden() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.isHidden();
-            } else {
-                return mSmb2File.isHidden();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.isHidden();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.isHidden();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.isHidden();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -361,49 +468,70 @@ public class JcifsFile {
 
     public long length() throws JcifsException {
         try {
-            if (mSmb1) {
-                return mSmb1File.length();
-            } else {
-                return mSmb2File.length();
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.length();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.length();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.length();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public String[] list() throws JcifsException {
         try {
-            if (mSmb1) return mSmb1File.list();
-            else return mSmb2File.list();
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.list();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.list();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.list();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         }
-
     }
 
     public JcifsFile[] listFiles() throws JcifsException {
         try {
-            if (mSmb1) {
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
                 jcifs.smb.SmbFile[] smb1Files = mSmb1File.listFiles();
                 if (smb1Files == null) return null;
                 JcifsFile[] result = new JcifsFile[smb1Files.length];
                 for (int i = 0; i < smb1Files.length; i++)
                     result[i] = new JcifsFile(smb1Files[i], mAuth);
                 return result;
-            } else {
-                jcifsng.smb.SmbFile[] smb2Files = mSmb2File.listFiles();
-                if (smb2Files == null) return null;
-                JcifsFile[] result = new JcifsFile[smb2Files.length];
-                for (int i = 0; i < smb2Files.length; i++)
-                    result[i] = new JcifsFile(smb2Files[i], mAuth);
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+                jcifsng.smb.SmbFile[] smb201Files = mSmb201File.listFiles();
+                if (smb201Files == null) return null;
+                JcifsFile[] result = new JcifsFile[smb201Files.length];
+                for (int i = 0; i < smb201Files.length; i++)
+                    result[i] = new JcifsFile(smb201Files[i], mAuth);
                 return result;
-            }
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+                jcifsng211.smb.SmbFile[] smb211Files = mSmb211File.listFiles();
+                if (smb211Files == null) return null;
+                JcifsFile[] result = new JcifsFile[smb211Files.length];
+                for (int i = 0; i < smb211Files.length; i++)
+                    result[i] = new JcifsFile(smb211Files[i], mAuth);
+                return result;
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -412,16 +540,23 @@ public class JcifsFile {
 
     public void renameTo(JcifsFile d) throws JcifsException {
         try {
-            if (mSmb1) {
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
                 if (d.getSmb1File() == null)
                     throw new JcifsException("Null SMB1 file specified.");
                 else mSmb1File.renameTo(d.getSmb1File());
-            } else {
-                if (d.getSmb2File() == null)
-                    throw new JcifsException("Null SMB2 file specified.");
-                else mSmb2File.renameTo(d.getSmb2File());
-            }
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+                if (d.getSmb201File() == null)
+                    throw new JcifsException("Null SMB201 file specified.");
+                else mSmb201File.renameTo(d.getSmb201File());
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+                if (d.getSmb211File() == null)
+                    throw new JcifsException("Null SMB211 file specified.");
+                else mSmb211File.renameTo(d.getSmb211File());
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -435,12 +570,17 @@ public class JcifsFile {
 
     public void setLastModified(long lm) throws JcifsException {
         try {
-            if (mSmb1) {
-                mSmb1File.setLastModified(lm);
-            } else {
-                mSmb2File.setLastModified(lm);
-            }
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	mSmb1File.setLastModified(lm);
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	mSmb201File.setLastModified(lm);
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	mSmb211File.setLastModified(lm);
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
@@ -449,8 +589,17 @@ public class JcifsFile {
 
     public long getLastModified() throws JcifsException {
         try {
-            return mSmb1 ? mSmb1File.lastModified() : mSmb2File.lastModified();
+            if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+            	return mSmb1File.lastModified();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+            	return mSmb201File.lastModified();
+            } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+            	return mSmb211File.lastModified();
+            } else 
+            	throw (new JcifsException("Unknown SMB Level"));
         } catch (jcifsng.smb.SmbException e) {
+            throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
+        } catch (jcifsng211.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
         } catch (jcifs.smb.SmbException e) {
             throw (new JcifsException(e, e.getNtStatus(), e.getCause()));
