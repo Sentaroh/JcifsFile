@@ -294,6 +294,20 @@ public class JcifsFile {
         }
     }
 
+    public void close() throws JcifsException {
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
+        	//Nop for JCIFS(SMB1)
+//        	mSmb1File.close();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB201) {
+        	mSmb201File.close();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB211) {
+        	mSmb211File.close();
+        } else if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB212) {
+        	mSmb212File.close();
+        } else 
+        	throw (new JcifsException("Unknown SMB Level"));
+    }
+
     public void connect() throws JcifsException {
         try {
             if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) {
