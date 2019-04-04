@@ -1,13 +1,12 @@
 使用方法
 
-boolean SMB1=true;
-boolean SMB2=false;
-
 //SMB1 for jcifs-1.3.17(SMB1)
-JcifsAuth auth_smb1=new JcifsAuth(SMB1, domain, username, userpassword);
+JcifsAuth auth_smb1=new JcifsAuth(JcifsFile.JCIFS_FILE_SMB1, domain, username, userpassword);
 
-//SMB2 by jcifs-ng
-JcifsAuth auth_smb2=new JcifsAuth(SMB2, domain, username, userpassword);
+//SMB2/3 by jcifs-ng
+JcifsAuth auth_smb2=new JcifsAuth(JcifsFile.JCIFS_FILE_SMB201, domain, username, userpassword); //For SMB2(210)
+JcifsAuth auth_smb2=new JcifsAuth(JcifsFile.JCIFS_FILE_SMB211, domain, username, userpassword); //For SMB2(211)
+JcifsAuth auth_smb2=new JcifsAuth(JcifsFile.JCIFS_FILE_SMB212, domain, username, userpassword); //For SMB2or3
 
 JcifsFile jf_smb1=new JcifsFile("smb://192.168.0.10/share/readme.txt", auth_smb1);
 
