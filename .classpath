@@ -9,5 +9,6 @@
 	<classpathentry kind="lib" path="jars/WrapperForSlf4j-1.0.2.jar"/>
 	<classpathentry kind="lib" path="D:/PGMS/JcifsFile/jars/jcifs-ng-2.1.1-20190202-03.jar"/>
 	<classpathentry kind="lib" path="jars/jcifs-ng-2.1.2-20190324-01.jar"/>
+	<classpathentry kind="lib" path="jars/jcifs-ng-2.1.4-20200413-01.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

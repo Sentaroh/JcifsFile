@@ -29,8 +29,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import jcifsng.Config;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,8 +74,10 @@ public class JcifsUtil {
             return getSmbHostIpAddressFromNameSmb2(hn);
         } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB211) {
             return getSmbHostIpAddressFromNameSmb211(hn);
-        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB212) {
+        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB214) {
             return getSmbHostIpAddressFromNameSmb212(hn);
+        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB214) {
+            return getSmbHostIpAddressFromNameSmb214(hn);
         }
         return null;
     }
@@ -141,6 +141,21 @@ public class JcifsUtil {
         return ipAddress;
     }
 
+    final static private String getSmbHostIpAddressFromNameSmb214(String hn) {
+        String ipAddress = null;
+        try {
+            jcifsng214.context.BaseContext bc = new jcifsng214.context.BaseContext(new jcifsng214.config.PropertyConfiguration(System.getProperties()));
+            ipAddress = bc.getNameServiceClient().getByName(hn).getHostAddress();
+        } catch (UnknownHostException e) {
+			log.error("getSmbHostIpAddressFromNameSmb2 UnknownHostException", e);
+        } catch (jcifsng214.CIFSException e) {
+        	log.error("getSmbHostIpAddressFromNameSmb2 CIFSException", e);
+        } catch (Exception e) {
+        	log.error("getSmbHostIpAddressFromNameSmb2 Exception", e);
+        }
+        return ipAddress;
+    }
+
     final static public boolean isIpAddressAndPortConnected(String address, int port, int timeout) {
         boolean reachable = false;
         Socket socket = new Socket();
@@ -166,6 +181,8 @@ public class JcifsUtil {
             return getSmbHostNameFromAddressSmb211(address);
         } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB212) {
             return getSmbHostNameFromAddressSmb212(address);
+        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB214) {
+            return getSmbHostNameFromAddressSmb214(address);
         }
         return null;
     }
@@ -271,6 +288,32 @@ public class JcifsUtil {
         return srv_name;
     }
 
+    final static private String getSmbHostNameFromAddressSmb214(String address) {
+        String srv_name = "";
+        try {
+            jcifsng214.context.BaseContext bc = new jcifsng214.context.BaseContext(new jcifsng214.config.PropertyConfiguration(System.getProperties()));
+            jcifsng214.NetbiosAddress[] uax = bc.getNameServiceClient().getNbtAllByAddress(address);
+            if (uax != null) {
+                for (int i = 0; i < uax.length; i++) {
+                    jcifsng214.NetbiosAddress ua = uax[i];
+                    String hn;
+                    hn = ua.firstCalledName();
+                    if (ua.getNameType() == 32) {
+                        srv_name = hn;
+                        break;
+                    }
+                }
+            }
+        } catch (UnknownHostException e) {
+        	log.error("getSmbHostNameFromAddressSmb2 UnknownHostException", e);
+        } catch (jcifsng214.CIFSException e) {
+        	log.error("getSmbHostNameFromAddressSmb2 CIFSException", e);
+        } catch (Exception e) {
+        	log.error("getSmbHostNameFromAddressSmb2 Exception", e);
+        }
+        return srv_name;
+    }
+
     final static public boolean isNetbiosAddress(int smb_level, String address) {
         if (smb_level==JcifsAuth.JCIFS_FILE_SMB1) {
             return isNbtAddressActiveSmb1(address);
@@ -280,6 +323,8 @@ public class JcifsUtil {
             return isNbtAddressActiveSmb211(address);
         } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB212) {
             return isNbtAddressActiveSmb212(address);
+        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB214) {
+            return isNbtAddressActiveSmb214(address);
         }
         return false;
     }
@@ -338,6 +383,22 @@ public class JcifsUtil {
         } catch (UnknownHostException e) {
         	log.error("isNbtAddressActiveSmb2 UnknownHostException", e);
         } catch (jcifsng212.CIFSException e) {
+        	log.error("isNbtAddressActiveSmb2 CIFSException", e);
+        } catch (Exception e) {
+        	log.error("isNbtAddressActiveSmb2 Exception", e);
+        }
+        return result;
+    }
+
+    final static private boolean isNbtAddressActiveSmb214(String address) {
+        boolean result = false;
+        try {
+            jcifsng214.context.BaseContext bc = new jcifsng214.context.BaseContext(new jcifsng214.config.PropertyConfiguration(System.getProperties()));
+            jcifsng214.NetbiosAddress na = bc.getNameServiceClient().getNbtByName(address);
+            result = na.isActive(bc);
+        } catch (UnknownHostException e) {
+        	log.error("isNbtAddressActiveSmb2 UnknownHostException", e);
+        } catch (jcifsng214.CIFSException e) {
         	log.error("isNbtAddressActiveSmb2 CIFSException", e);
         } catch (Exception e) {
         	log.error("isNbtAddressActiveSmb2 Exception", e);
