@@ -74,7 +74,7 @@ public class JcifsUtil {
             return getSmbHostIpAddressFromNameSmb2(hn);
         } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB211) {
             return getSmbHostIpAddressFromNameSmb211(hn);
-        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB214) {
+        } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB212) {
             return getSmbHostIpAddressFromNameSmb212(hn);
         } else if (smb_level==JcifsAuth.JCIFS_FILE_SMB214) {
             return getSmbHostIpAddressFromNameSmb214(hn);
