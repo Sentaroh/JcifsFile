@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="jars/jcifs-ng-2.1.1-20190202-03.jar"/>
 	<classpathentry kind="lib" path="jars/jcifs-ng-2.1.2-20190324-01.jar"/>
 	<classpathentry kind="lib" path="jars/jcifs-ng-2.1.4-20200413-01.jar"/>
+	<classpathentry kind="lib" path="jars/jcifsngLatest.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
